@@ -41,7 +41,7 @@ public class ReturnResults extends BaseRichBolt {
     OutputCollector _collector;
     boolean local;
     Map<String, Object> _conf;
-    Map<List, DRPCInvocationsClient> _clients = new HashMap<List, DRPCInvocationsClient>();
+    Map<List<String>, DRPCInvocationsClient> _clients = new HashMap<>();
 
     @Override
     public void prepare(Map<String, Object> topoConf, TopologyContext context, OutputCollector collector) {
@@ -54,6 +54,7 @@ public class ReturnResults extends BaseRichBolt {
     public void execute(Tuple input) {
         String result = (String) input.getValue(0);
         String returnInfo = (String) input.getValue(1);
+        LOG.debug("Request Info: {}, Result: {}", returnInfo, result);
         if (returnInfo != null) {
             Map<String, Object> retMap;
             try {
@@ -66,34 +67,22 @@ public class ReturnResults extends BaseRichBolt {
             final String host = (String) retMap.get("host");
             final int port = ObjectReader.getInt(retMap.get("port"));
             String id = (String) retMap.get("id");
-            DistributedRPCInvocations.Iface client;
-            if (local) {
-                client = (DistributedRPCInvocations.Iface) ServiceRegistry.getService(host);
-            } else {
-                List server = new ArrayList() {{
-                    add(host);
-                    add(port);
-                }};
-
-                if (!_clients.containsKey(server)) {
-                    try {
-                        _clients.put(server, new DRPCInvocationsClient(_conf, host, port));
-                    } catch (TTransportException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                }
-                client = _clients.get(server);
-            }
-
+            LOG.debug("Request Id: {}, Result: {}", id, result);
+            DistributedRPCInvocations.Iface client = getDRPCClient(host, port);
 
             int retryCnt = 0;
             int maxRetries = 3;
             while (retryCnt < maxRetries) {
                 retryCnt++;
                 try {
-                    client.result(id, result);
-                    _collector.ack(input);
-                    break;
+                    if (client != null) {
+                        LOG.debug("Trying to publish Request Id: {}, Result: {}, to DRPC {}", id, result, host);
+                        client.result(id, result);
+                        _collector.ack(input);
+                        break;
+                    } else {
+                        client = getDRPCClient(host, port);
+                    }
                 } catch (AuthorizationException aze) {
                     LOG.error("Not authorized to return results to DRPC server", aze);
                     _collector.fail(input);
@@ -103,21 +92,34 @@ public class ReturnResults extends BaseRichBolt {
                         LOG.error("Failed to return results to DRPC server", tex);
                         _collector.fail(input);
                     }
-                    reconnectClient((DRPCInvocationsClient) client);
+                    client = getDRPCClient(host, port);
                 }
             }
         }
     }
 
-    private void reconnectClient(DRPCInvocationsClient client) {
-        if (client instanceof DRPCInvocationsClient) {
-            try {
-                LOG.info("reconnecting... ");
-                client.reconnectClient(); //Blocking call
-            } catch (TException e2) {
-                LOG.error("Failed to connect to DRPC server", e2);
+    private DistributedRPCInvocations.Iface getDRPCClient(String host, int port) {
+        DistributedRPCInvocations.Iface client;
+        if (local) {
+            client = (DistributedRPCInvocations.Iface) ServiceRegistry.getService(host);
+        } else {
+            List server = new ArrayList() {
+                {
+                    add(host);
+                    add(port);
+                }
+            };
+            if (!_clients.containsKey(server)) {
+                try {
+                    DRPCInvocationsClient oldClient = _clients.put(server, new DRPCInvocationsClient(_conf, host, port));
+                    oldClient.close();
+                } catch (TTransportException ex) {
+                    throw new RuntimeException(ex);
+                }
             }
+            client = _clients.get(server);
         }
+        return client;
     }
 
     @Override
