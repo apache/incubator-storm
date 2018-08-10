@@ -20,16 +20,12 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.storm.daemon.metrics.ClientMetricsUtils;
 import org.apache.storm.daemon.metrics.MetricsUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class CsvPreparableReporter implements PreparableReporter<CsvReporter> {
-    private static final Logger LOG = LoggerFactory.getLogger(CsvPreparableReporter.class);
-    CsvReporter reporter = null;
+public class CsvPreparableReporter extends ScheduledPreparableReporter<CsvReporter> {
 
     @Override
     public void prepare(MetricRegistry metricsRegistry, Map<String, Object> topoConf) {
-        LOG.debug("Preparing...");
+        log.debug("Preparing...");
         CsvReporter.Builder builder = CsvReporter.forRegistry(metricsRegistry);
 
         Locale locale = ClientMetricsUtils.getMetricsReporterLocale(topoConf);
@@ -50,26 +46,6 @@ public class CsvPreparableReporter implements PreparableReporter<CsvReporter> {
         File csvMetricsDir = MetricsUtils.getCsvLogDir(topoConf);
         reporter = builder.build(csvMetricsDir);
     }
-
-    @Override
-    public void start() {
-        if (reporter != null) {
-            LOG.debug("Starting...");
-            reporter.start(10, TimeUnit.SECONDS);
-        } else {
-            throw new IllegalStateException("Attempt to start without preparing " + getClass().getSimpleName());
-        }
-    }
-
-    @Override
-    public void stop() {
-        if (reporter != null) {
-            LOG.debug("Stopping...");
-            reporter.stop();
-        } else {
-            throw new IllegalStateException("Attempt to stop without preparing " + getClass().getSimpleName());
-        }
-    }
-
 }
+
 

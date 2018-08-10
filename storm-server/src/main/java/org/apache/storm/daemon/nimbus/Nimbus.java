@@ -433,6 +433,7 @@ public class Nimbus implements Iface, Shutdownable, DaemonCommon {
     private AtomicReference<Map<String, Set<List<Integer>>>> idToExecutors;
     //May be null if worker tokens are not supported by the thrift transport.
     private WorkerTokenManager workerTokenManager;
+    private StormMetricsRegistry.Session metricsReporters;
 
     public Nimbus(Map<String, Object> conf, INimbus inimbus) throws Exception {
         this(conf, inimbus, null, null, null, null, null);
@@ -2807,7 +2808,14 @@ public class Nimbus implements Iface, Shutdownable, DaemonCommon {
                                         }
                                     });
 
-            StormMetricsRegistry.registerGauge("nimbus:num-supervisors", () -> state.supervisors(null).size());
+            StormMetricsRegistry.registerGauge("nimbus:num-supervisors", () -> {
+                try {
+                    return state.supervisors(null).size();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            });
             StormMetricsRegistry.registerGauge("nimbus:fragmented-memory", this::fragmentedMemory);
             StormMetricsRegistry.registerGauge("nimbus:fragmented-cpu", this::fragmentedCpu);
             StormMetricsRegistry.registerGauge("nimbus:available-memory", () -> nodeIdToResources.get().values()
@@ -2827,7 +2835,7 @@ public class Nimbus implements Iface, Shutdownable, DaemonCommon {
                 .mapToDouble(SupervisorResources::getTotalCpu)
                 .sum());
 
-            StormMetricsRegistry.startMetricsReporters(conf);
+            metricsReporters = StormMetricsRegistry.startMetricsReporters(conf);
 
             if (clusterConsumerExceutors != null) {
                 timer.scheduleRecurring(0, ObjectReader.getInt(conf.get(DaemonConfig.STORM_CLUSTER_METRICS_CONSUMER_PUBLISH_INTERVAL_SECS)),
@@ -4516,6 +4524,9 @@ public class Nimbus implements Iface, Shutdownable, DaemonCommon {
             }
             if (metricsStore != null) {
                 metricsStore.close();
+            }
+            if (metricsReporters != null) {
+                metricsReporters.close();
             }
             LOG.info("Shut down master");
         } catch (Exception e) {

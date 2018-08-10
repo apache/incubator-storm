@@ -52,7 +52,8 @@ import org.slf4j.LoggerFactory;
 public class DRPCServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(DRPCServer.class);
     private static final Meter meterShutdownCalls = StormMetricsRegistry.registerMeter("drpc:num-shutdown-calls");
-   
+    private final StormMetricsRegistry.Session metricsReporters;
+
     //TODO in the future this might be better in a common webapp location
 
     /**
@@ -140,6 +141,7 @@ public class DRPCServer implements AutoCloseable {
         handlerServer = mkHandlerServer(thrift, ObjectReader.getInt(conf.get(Config.DRPC_PORT), null), conf);
         invokeServer = mkInvokeServer(thrift, ObjectReader.getInt(conf.get(Config.DRPC_INVOCATIONS_PORT), 3773), conf);
         httpServer = mkHttpServer(conf, drpc);
+        metricsReporters = StormMetricsRegistry.startMetricsReporters(conf);
     }
 
     @VisibleForTesting
@@ -170,6 +172,7 @@ public class DRPCServer implements AutoCloseable {
         if (!closed) {
             //This is kind of useless...
             meterShutdownCalls.mark();
+            metricsReporters.close();
 
             if (handlerServer != null) {
                 handlerServer.stop();
@@ -223,7 +226,6 @@ public class DRPCServer implements AutoCloseable {
         Map<String, Object> conf = Utils.readStormConfig();
         try (DRPCServer server = new DRPCServer(conf)) {
             Utils.addShutdownHookWithForceKillIn1Sec(server::close);
-            StormMetricsRegistry.startMetricsReporters(conf);
             server.start();
             server.awaitTermination();
         }
