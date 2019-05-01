@@ -38,44 +38,45 @@ import org.apache.storm.trident.tuple.TridentTuple;
  * A simple Trident topology uses TransactionalTridentEventHubSpout
  */
 public class TransactionalTridentEventCount extends EventCount {
-  public static class LoggingFilter extends BaseFilter {
-    private static final long serialVersionUID = 1L;
-    private static final Logger logger = LoggerFactory.getLogger(LoggingFilter.class);
-    private final String prefix;
-    private final long logIntervalMs;
-    private long lastTime;
-    public LoggingFilter(String prefix, int logIntervalMs) {
-      this.prefix = prefix;
-      this.logIntervalMs = logIntervalMs;
-      lastTime = System.nanoTime();
-    }
+	public static class LoggingFilter extends BaseFilter {
+		private static final long serialVersionUID = 1L;
+		private static final Logger logger = LoggerFactory.getLogger(LoggingFilter.class);
+		private final String prefix;
+		private final long logIntervalMs;
+		private long lastTime;
+		
+		public LoggingFilter(String prefix, int logIntervalMs) {
+			this.prefix = prefix;
+			this.logIntervalMs = logIntervalMs;
+			lastTime = System.nanoTime();
+		}
 
-    @Override
-    public boolean isKeep(TridentTuple tuple) {
-      long now = System.nanoTime();
-      if(logIntervalMs < (now - lastTime) / 1000000) {
-        logger.info(prefix + tuple.toString());
-        lastTime = now;
-      }
-      return false;
-    }
-  }
+		@Override
+		public boolean isKeep(TridentTuple tuple) {
+			long now = System.nanoTime();
+			if (logIntervalMs < (now - lastTime) / 1000000) {
+				logger.info(prefix + tuple.toString());
+				lastTime = now;
+			}
+			return false;
+		}
+	}
   
-  @Override
-  protected StormTopology buildTopology(EventHubSpout eventHubSpout) {
-    TridentTopology topology = new TridentTopology();
+	@Override
+	protected StormTopology buildTopology(EventHubSpout eventHubSpout) {
+		TridentTopology topology = new TridentTopology();
     
-    TransactionalTridentEventHubSpout spout = new TransactionalTridentEventHubSpout(spoutConfig);
-    TridentState state = topology.newStream("stream-" + spoutConfig.getTopologyName(), spout)
-        .parallelismHint(spoutConfig.getPartitionCount())
-        .aggregate(new Count(), new Fields("partial-count"))
-        .persistentAggregate(new MemoryMapState.Factory(), new Fields("partial-count"), new Sum(), new Fields("count"));
-    state.newValuesStream().each(new Fields("count"), new LoggingFilter("got count: ", 10000));
-    return topology.build();
-  }
+		TransactionalTridentEventHubSpout spout = new TransactionalTridentEventHubSpout(spoutConfig);
+		TridentState state = topology.newStream("stream-" + spoutConfig.getTopologyName(), spout)
+				.parallelismHint(spoutConfig.getPartitionCount())
+				.aggregate(new Count(), new Fields("partial-count"))
+				.persistentAggregate(new MemoryMapState.Factory(), new Fields("partial-count"), new Sum(), new Fields("count"));
+		state.newValuesStream().each(new Fields("count"), new LoggingFilter("got count: ", 10000));
+		return topology.build();
+	}
   
-  public static void main(String[] args) throws Exception {
-    TransactionalTridentEventCount scenario = new TransactionalTridentEventCount();
-    scenario.runScenario(args);
-  }
+	public static void main(String[] args) throws Exception {
+		TransactionalTridentEventCount scenario = new TransactionalTridentEventCount();
+		scenario.runScenario(args);
+	}
 }

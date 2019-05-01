@@ -33,21 +33,21 @@ import org.apache.storm.eventhubs.trident.OpaqueTridentEventHubSpout;
  * A simple Trident topology uses OpaqueTridentEventHubSpout
  */
 public class OpaqueTridentEventCount extends EventCount {
-  @Override
-  protected StormTopology buildTopology(EventHubSpout eventHubSpout) {
-    TridentTopology topology = new TridentTopology();
+	@Override
+	protected StormTopology buildTopology(EventHubSpout eventHubSpout) {
+		TridentTopology topology = new TridentTopology();
     
-    OpaqueTridentEventHubSpout spout = new OpaqueTridentEventHubSpout(spoutConfig);
-    TridentState state = topology.newStream("stream-" + spoutConfig.getTopologyName(), spout)
-        .parallelismHint(spoutConfig.getPartitionCount())
-        .aggregate(new Count(), new Fields("partial-count"))
-        .persistentAggregate(new MemoryMapState.Factory(), new Fields("partial-count"), new Sum(), new Fields("count"));
-    state.newValuesStream().each(new Fields("count"), new LoggingFilter("got count: ", 10000));
-    return topology.build();
-  }
+		OpaqueTridentEventHubSpout spout = new OpaqueTridentEventHubSpout(spoutConfig);
+		TridentState state = topology.newStream("stream-" + spoutConfig.getTopologyName(), spout)
+				.parallelismHint(spoutConfig.getPartitionCount())
+				.aggregate(new Count(), new Fields("partial-count"))
+				.persistentAggregate(new MemoryMapState.Factory(), new Fields("partial-count"), new Sum(), new Fields("count"));
+		state.newValuesStream().each(new Fields("count"), new LoggingFilter("got count: ", 10000));
+		return topology.build();
+	}
   
-  public static void main(String[] args) throws Exception {
-    OpaqueTridentEventCount scenario = new OpaqueTridentEventCount();
-    scenario.runScenario(args);
-  }
+	public static void main(String[] args) throws Exception {
+		OpaqueTridentEventCount scenario = new OpaqueTridentEventCount();
+		scenario.runScenario(args);
+	}
 }

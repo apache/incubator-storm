@@ -15,22 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *******************************************************************************/
-package org.apache.storm.eventhubs.spout;
+package org.apache.storm.eventhubs.core;
 
-import java.util.Map;
+import com.microsoft.azure.eventhubs.EventHubClient;
+import com.microsoft.azure.eventhubs.EventHubException;
+import com.microsoft.azure.eventhubs.PartitionReceiver;
+import com.microsoft.azure.eventhubs.ReceiverOptions;
 
-import com.microsoft.eventhubs.client.EventHubException;
-import com.microsoft.eventhubs.client.IEventHubFilter;
-
-public interface IEventHubReceiver {
-
-  void open(IEventHubFilter filter) throws EventHubException;
-
-  void close();
-  
-  boolean isOpen();
-
-  EventData receive(long timeoutInMilliseconds);
-  
-  Map getMetricsData();
+public final class PartitionReceiverFactory {
+    public static PartitionReceiver createReceiver(EventHubClient ehClient, IEventFilter filter,
+            EventHubConfig eventHubConfig, String partitionId) throws EventHubException
+    {
+        ReceiverOptions opts = new ReceiverOptions();
+        opts.setPrefetchCount(eventHubConfig.getPrefetchCount());
+    	return ehClient.createEpochReceiverSync(eventHubConfig.getConsumerGroupName(), partitionId, filter.getEventPosition(), 1L, opts);
+    }
 }

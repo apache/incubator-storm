@@ -28,25 +28,24 @@ import org.apache.storm.eventhubs.spout.EventHubSpout;
  * A sample topology that loops message back to EventHub
  */
 public class EventHubLoop extends EventCount {
+	@Override
+	protected StormTopology buildTopology(EventHubSpout eventHubSpout) {
+		TopologyBuilder topologyBuilder = new TopologyBuilder();
 
-  @Override
-  protected StormTopology buildTopology(EventHubSpout eventHubSpout) {
-    TopologyBuilder topologyBuilder = new TopologyBuilder();
-
-    topologyBuilder.setSpout("EventHubsSpout", eventHubSpout, spoutConfig.getPartitionCount())
-      .setNumTasks(spoutConfig.getPartitionCount());
-    EventHubBoltConfig boltConfig = new EventHubBoltConfig(spoutConfig.getConnectionString(),
-        spoutConfig.getEntityPath(), true);
+		topologyBuilder.setSpout("EventHubsSpout", eventHubSpout, spoutConfig.getPartitionCount())
+				.setNumTasks(spoutConfig.getPartitionCount());
+		EventHubBoltConfig boltConfig = new EventHubBoltConfig(spoutConfig.getConnectionString(),
+				spoutConfig.getEntityPath(), true);
     
-    EventHubBolt eventHubBolt = new EventHubBolt(boltConfig);
-    int boltTasks = spoutConfig.getPartitionCount();
-    topologyBuilder.setBolt("EventHubsBolt", eventHubBolt, boltTasks)
-      .localOrShuffleGrouping("EventHubsSpout").setNumTasks(boltTasks);
-    return topologyBuilder.createTopology();
-  }
+		EventHubBolt eventHubBolt = new EventHubBolt(boltConfig);
+		int boltTasks = spoutConfig.getPartitionCount();
+		topologyBuilder.setBolt("EventHubsBolt", eventHubBolt, boltTasks)
+				.localOrShuffleGrouping("EventHubsSpout").setNumTasks(boltTasks);
+		return topologyBuilder.createTopology();
+	}
   
-  public static void main(String[] args) throws Exception {
-    EventHubLoop scenario = new EventHubLoop();
-    scenario.runScenario(args);
-  }
+	public static void main(String[] args) throws Exception {
+		EventHubLoop scenario = new EventHubLoop();
+		scenario.runScenario(args);
+	}
 }
