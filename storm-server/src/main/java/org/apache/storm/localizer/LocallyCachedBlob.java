@@ -13,7 +13,6 @@
 package org.apache.storm.localizer;
 
 import com.codahale.metrics.Histogram;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -27,7 +26,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.storm.blobstore.ClientBlobStore;
 import org.apache.storm.blobstore.InputStreamWithMeta;
 import org.apache.storm.generated.AuthorizationException;
@@ -79,7 +77,7 @@ public abstract class LocallyCachedBlob {
      */
     protected DownloadMeta fetch(ClientBlobStore store, String key,
                                  IOFunction<Long, Path> pathSupplier,
-                                 IOFunction<File, OutputStream> outStreamSupplier)
+                                 IOFunction<Path, OutputStream> outStreamSupplier)
             throws KeyNotFoundException, AuthorizationException, IOException {
 
         try (InputStreamWithMeta in = store.getBlob(key)) {
@@ -95,7 +93,7 @@ public abstract class LocallyCachedBlob {
 
             long duration;
             long totalRead = 0;
-            try (OutputStream out = outStreamSupplier.apply(downloadPath.toFile())) {
+            try (OutputStream out = outStreamSupplier.apply(downloadPath)) {
                 long startTime = Time.nanoTime();
 
                 byte[] buffer = new byte[4096];
@@ -231,7 +229,7 @@ public abstract class LocallyCachedBlob {
     }
 
     /**
-     * Removes a reservation for this blob from a given slot and assignemnt.
+     * Removes a reservation for this blob from a given slot and assignment.
      * @param pna the slot + assignment that no longer needs this blob.
      */
     public void removeReference(final PortAndAssignment pna) {

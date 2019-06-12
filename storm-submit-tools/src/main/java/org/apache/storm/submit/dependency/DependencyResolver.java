@@ -18,11 +18,11 @@
 
 package org.apache.storm.submit.dependency;
 
-import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.collection.CollectRequest;
@@ -83,7 +83,7 @@ public class DependencyResolver {
     }
 
     private String handleRelativePath(String localRepoPath) {
-        File repoDir = new File(localRepoPath);
+        Path repoDir = Paths.get(localRepoPath);
         if (!repoDir.isAbsolute()) {
             // find homedir
             String home = System.getProperty("storm.home");

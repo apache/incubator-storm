@@ -19,12 +19,12 @@
 package org.apache.storm.flux.parser;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Properties;
-
 import org.apache.storm.flux.model.BoltDef;
 import org.apache.storm.flux.model.IncludeDef;
 import org.apache.storm.flux.model.SpoutDef;
@@ -56,11 +56,10 @@ public class FluxParser {
      */
     public static TopologyDef parseFile(String inputFile, boolean dumpYaml, boolean processIncludes,
                                         Properties properties, boolean envSub) throws IOException {
-        FileInputStream in = new FileInputStream(inputFile);
-        TopologyDef topology = parseInputStream(in, dumpYaml, processIncludes, properties, envSub);
-        in.close();
-
-        return topology;
+        try (InputStream in = Files.newInputStream(Paths.get(inputFile))) {
+            TopologyDef topology = parseInputStream(in, dumpYaml, processIncludes, properties, envSub);
+            return topology;
+        }
     }
 
     /**
@@ -126,14 +125,11 @@ public class FluxParser {
 
         if (propertiesFile != null) {
             properties = new Properties();
-            InputStream in = null;
-            if (resource) {
-                in = FluxParser.class.getResourceAsStream(propertiesFile);
-            } else {
-                in = new FileInputStream(propertiesFile);
+            try (InputStream in = resource
+                ? FluxParser.class.getResourceAsStream(propertiesFile)
+                : Files.newInputStream(Paths.get(propertiesFile))) {
+                properties.load(in);
             }
-            properties.load(in);
-            in.close();
         }
 
         return properties;

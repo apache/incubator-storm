@@ -18,6 +18,16 @@
 
 package org.apache.storm.pmml;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import org.apache.storm.spout.SpoutOutputCollector;
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.OutputFieldsDeclarer;
@@ -25,17 +35,6 @@ import org.apache.storm.topology.base.BaseRichSpout;
 import org.apache.storm.tuple.Fields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 
 public class RawInputFromCSVSpout extends BaseRichSpout {
     private static final Logger LOG = LoggerFactory.getLogger(RawInputFromCSVSpout.class);
@@ -66,8 +65,8 @@ public class RawInputFromCSVSpout extends BaseRichSpout {
         return new RawInputFromCSVSpout(csv, outputFields);
     }
 
-    private static BufferedReader newReader(File csv) throws FileNotFoundException {
-        return new BufferedReader(new InputStreamReader(new FileInputStream(csv)));
+    private static BufferedReader newReader(File csv) throws IOException {
+        return Files.newBufferedReader(csv.toPath(), Charset.defaultCharset());
     }
 
     @Override

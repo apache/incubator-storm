@@ -21,20 +21,18 @@ package org.apache.storm.submit.command;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
-
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -103,7 +101,7 @@ public class DependencyResolverMain {
                     DEFAULT_FAILBACK_MAVEN_LOCAL_REPOSITORY_DIRECTORY);
 
             // create root directory if not exist
-            Files.createDirectories(new File(localMavenRepoPath).toPath());
+            Files.createDirectories(Paths.get(localMavenRepoPath));
 
             DependencyResolver resolver = new DependencyResolver(localMavenRepoPath, repositories);
 
@@ -195,7 +193,7 @@ public class DependencyResolverMain {
 
     private static String getOrDefaultLocalMavenRepositoryPath(String customLocalMavenPath, String defaultPath) {
         if (customLocalMavenPath != null) {
-            Path customPath = new File(customLocalMavenPath).toPath();
+            Path customPath = Paths.get(customLocalMavenPath);
             Preconditions.checkArgument(!Files.exists(customPath) || Files.isDirectory(customPath),
                     "Custom local maven repository path exist and is not a directory!");
             return customLocalMavenPath;
@@ -203,7 +201,7 @@ public class DependencyResolverMain {
 
         String localMavenRepoPathStr = getLocalMavenRepositoryPath();
         if (StringUtils.isNotEmpty(localMavenRepoPathStr)) {
-            Path localMavenRepoPath = new File(localMavenRepoPathStr).toPath();
+            Path localMavenRepoPath = Paths.get(localMavenRepoPathStr);
             if (Files.exists(localMavenRepoPath) && Files.isDirectory(localMavenRepoPath)) {
                 return localMavenRepoPathStr;
             }

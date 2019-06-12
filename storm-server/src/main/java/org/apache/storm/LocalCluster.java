@@ -20,6 +20,7 @@ package org.apache.storm;
 
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -92,7 +93,6 @@ import org.apache.storm.scheduler.ISupervisor;
 import org.apache.storm.security.auth.IGroupMappingServiceProvider;
 import org.apache.storm.security.auth.ThriftConnectionType;
 import org.apache.storm.security.auth.ThriftServer;
-import org.apache.storm.shade.org.apache.zookeeper.server.ServerConfig;
 import org.apache.storm.task.IBolt;
 import org.apache.storm.testing.InProcessZookeeper;
 import org.apache.storm.testing.NonRichBoltTracker;
@@ -201,17 +201,15 @@ public class LocalCluster implements ILocalClusterTrackedTopologyAware, Iface {
             this.tmpDirs.add(nimbusTmp);
             stormHomeBackup = System.getProperty(ConfigUtils.STORM_HOME);
             TmpPath stormHome = new TmpPath();
-            if (!stormHome.getFile().mkdirs()) {
-                throw new IllegalStateException("Failed to create storm.home directory " + stormHome.getPath());
-            }
+            Files.createDirectories(stormHome.getPath());
             this.tmpDirs.add(stormHome);
-            System.setProperty(ConfigUtils.STORM_HOME, stormHome.getPath());
+            System.setProperty(ConfigUtils.STORM_HOME, stormHome.getAbsolutePath());
             Map<String, Object> conf = ConfigUtils.readStormConfig();
             conf.put(Config.TOPOLOGY_SKIP_MISSING_KRYO_REGISTRATIONS, true);
             conf.put(Config.TOPOLOGY_ENABLE_MESSAGE_TIMEOUTS, false);
             conf.put(Config.TOPOLOGY_TRIDENT_BATCH_EMIT_INTERVAL_MILLIS, 50);
             conf.put(Config.STORM_CLUSTER_MODE, "local");
-            conf.put(Config.BLOBSTORE_DIR, nimbusTmp.getPath());
+            conf.put(Config.BLOBSTORE_DIR, nimbusTmp.getAbsolutePath());
             conf.put(Config.TOPOLOGY_MIN_REPLICATION_COUNT, 1);
 
             InProcessZookeeper zookeeper = null;
@@ -238,7 +236,7 @@ public class LocalCluster implements ILocalClusterTrackedTopologyAware, Iface {
                 conf.put(DaemonConfig.NIMBUS_MONITOR_FREQ_SECS, 1);
             }
             //Set it for nimbus only
-            conf.put(Config.STORM_LOCAL_DIR, nimbusTmp.getPath());
+            conf.put(Config.STORM_LOCAL_DIR, nimbusTmp.getAbsolutePath());
             Nimbus nimbus = new Nimbus(conf, builder.inimbus == null ? new StandaloneINimbus() : builder.inimbus,
                                        this.getClusterState(), null, builder.store, builder.topoCache, builder.leaderElector,
                                        builder.groupMapper, metricRegistry);
@@ -698,7 +696,7 @@ public class LocalCluster implements ILocalClusterTrackedTopologyAware, Iface {
         if (conf != null) {
             superConf.putAll(conf);
         }
-        superConf.put(Config.STORM_LOCAL_DIR, tmpDir.getPath());
+        superConf.put(Config.STORM_LOCAL_DIR, tmpDir.getAbsolutePath());
         superConf.put(DaemonConfig.SUPERVISOR_SLOTS_PORTS, portNumbers);
         if (!Time.isSimulating()) {
             //Monitor for assignment changes as often as possible, so e.g. shutdown happens as fast as possible.

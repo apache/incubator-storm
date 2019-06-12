@@ -16,9 +16,12 @@
 
 package org.apache.storm.utils;
 
+import com.google.common.base.Strings;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
 import org.apache.storm.generated.ComponentCommon;
 import org.apache.storm.generated.SpoutSpec;
 import org.apache.storm.generated.StormTopology;
@@ -35,8 +37,6 @@ import org.json.simple.JSONValue;
 import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Strings;
 
 public class TopologySpoutLag {
     // FIXME: This class can be moved to webapp once UI porting is done.
@@ -87,8 +87,8 @@ public class TopologySpoutLag {
         return commands;
     }
 
-    private static File createExtraPropertiesFile(Map<String, Object> jsonConf) {
-        File file = null;
+    private static Path createExtraPropertiesFile(Map<String, Object> jsonConf) {
+        Path file = null;
         Map<String, String> extraProperties = new HashMap<>();
         for (Map.Entry<String, Object> conf: jsonConf.entrySet()) {
             if (conf.getKey().startsWith(CONFIG_KEY_PREFIX) && !ALL_CONFIGS.contains(conf.getKey())) {
@@ -97,12 +97,12 @@ public class TopologySpoutLag {
         }
         if (!extraProperties.isEmpty()) {
             try {
-                file = File.createTempFile("kafka-consumer-extra", "props");
-                file.deleteOnExit();
+                file = Files.createTempFile("kafka-consumer-extra", "props");
+                file.toFile().deleteOnExit();
                 Properties properties = new Properties();
                 properties.putAll(extraProperties);
-                try(FileOutputStream fos = new FileOutputStream(file)) {
-                    properties.store(fos, "Kafka consumer extra properties");
+                try(OutputStream os = Files.newOutputStream(file)) {
+                    properties.store(os, "Kafka consumer extra properties");
                 }
             } catch (IOException ex) {
                 // ignore
@@ -158,10 +158,10 @@ public class TopologySpoutLag {
             }
             commands.addAll(getCommandLineOptionsForNewKafkaSpout(jsonMap));
 
-            File extraPropertiesFile = createExtraPropertiesFile(jsonMap);
+            Path extraPropertiesFile = createExtraPropertiesFile(jsonMap);
             if (extraPropertiesFile != null) {
                 commands.add("-c");
-                commands.add(extraPropertiesFile.getAbsolutePath());
+                commands.add(extraPropertiesFile.toAbsolutePath().toString());
             }
             logger.debug("Command to run: {}", commands);
 
@@ -179,7 +179,7 @@ public class TopologySpoutLag {
                     }
                 } finally {
                     if (extraPropertiesFile != null) {
-                        extraPropertiesFile.delete();
+                        Files.delete(extraPropertiesFile);
                     }
                 }
             }

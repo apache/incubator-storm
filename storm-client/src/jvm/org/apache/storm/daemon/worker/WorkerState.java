@@ -14,6 +14,7 @@ package org.apache.storm.daemon.worker;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,7 +37,6 @@ import java.util.function.Supplier;
 import org.apache.storm.Config;
 import org.apache.storm.Constants;
 import org.apache.storm.StormTimer;
-import org.apache.storm.cluster.DaemonType;
 import org.apache.storm.cluster.IStateStorage;
 import org.apache.storm.cluster.IStormClusterState;
 import org.apache.storm.cluster.VersionedData;
@@ -69,14 +69,12 @@ import org.apache.storm.serialization.ITupleSerializer;
 import org.apache.storm.serialization.KryoTupleSerializer;
 import org.apache.storm.shade.com.google.common.collect.ImmutableMap;
 import org.apache.storm.shade.com.google.common.collect.Sets;
-import org.apache.storm.shade.org.apache.commons.lang.Validate;
 import org.apache.storm.task.WorkerTopologyContext;
 import org.apache.storm.tuple.AddressedTuple;
 import org.apache.storm.tuple.Fields;
 import org.apache.storm.utils.ConfigUtils;
 import org.apache.storm.utils.JCQueue;
 import org.apache.storm.utils.ObjectReader;
-import org.apache.storm.utils.SupervisorClient;
 import org.apache.storm.utils.SupervisorIfaceFactory;
 import org.apache.storm.utils.ThriftTopologyUtils;
 import org.apache.storm.utils.Utils;
@@ -575,8 +573,8 @@ public class WorkerState {
 
     public final WorkerTopologyContext getWorkerTopologyContext() {
         try {
-            String codeDir = ConfigUtils.supervisorStormResourcesPath(ConfigUtils.supervisorStormDistRoot(conf, topologyId));
-            String pidDir = ConfigUtils.workerPidsRoot(conf, topologyId);
+            Path codeDir = ConfigUtils.supervisorStormResourcesPath(ConfigUtils.supervisorStormDistRoot(conf, topologyId));
+            Path pidDir = ConfigUtils.workerPidsRoot(conf, topologyId);
             return new WorkerTopologyContext(systemTopology, topologyConf, taskToComponent, componentToSortedTasks,
                                              componentToStreamToFields, topologyId, codeDir, pidDir, port, localTaskIds,
                                              defaultSharedResources,
