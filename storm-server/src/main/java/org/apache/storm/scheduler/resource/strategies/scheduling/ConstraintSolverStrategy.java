@@ -314,7 +314,10 @@ public class ConstraintSolverStrategy extends BaseResourceAwareStrategy {
             double cpuUsed = 0.0;
             double memoryUsed = 0.0;
             for (ExecutorDetails exec : execs) {
-                cpuUsed += topo.getTotalCpuReqTask(exec);
+                Double execCpu = topo.getTotalCpuReqTask(exec);
+                if (execCpu != null) {
+                	cpuUsed += execCpu;
+                }
                 memoryUsed += topo.getTotalMemReqTask(exec);
             }
             if (node.getAvailableCpuResources() != (node.getTotalCpuResources() - cpuUsed)) {
